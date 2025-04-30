@@ -27,28 +27,44 @@ const CameraController = ({ target, isZoomedIn }: CameraControllerProps) => {
   const { camera } = useThree();
   const initialPosition = useRef(new Vector3(4, 4, 4)); // Keep initial position
   const zoomedPosition = useRef(new Vector3(0.0, 1.2, 0.6)); // Keep zoomed position
+  const isAnimating = useRef(false);
+  const animationStartTime = useRef(0);
 
-  useFrame(() => {
+  useFrame((state) => {
     const targetPosition = isZoomedIn ? zoomedPosition.current : initialPosition.current;
-    // Smoothly interpolate camera position
-    camera.position.lerp(targetPosition, 0.05);
+    
+    // Calculate eased lerp factor based on animation progress
+    if (!isAnimating.current) {
+      isAnimating.current = true;
+      animationStartTime.current = state.clock.elapsedTime;
+    }
+    
+    const animationDuration = 1.0; // 1 second animation
+    const elapsed = state.clock.elapsedTime - animationStartTime.current;
+    const progress = Math.min(elapsed / animationDuration, 1);
+    
+    // Ease in-out function for smoother animation
+    const easeInOut = (t: number) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+    const easedProgress = easeInOut(progress);
+    
+    // Use eased progress for lerp
+    camera.position.lerpVectors(camera.position, targetPosition, easedProgress);
 
     // Smoothly interpolate camera lookAt target
-    const lookAtTarget = new Vector3(); // Temporary vector for lerping
-    const currentLookAt = new Vector3(); // Get current lookAt target (approximate)
-    camera.getWorldDirection(currentLookAt).multiplyScalar(10).add(camera.position); // Get a point in front
+    const lookAtTarget = new Vector3();
+    const currentLookAt = new Vector3();
+    camera.getWorldDirection(currentLookAt);
+    currentLookAt.multiplyScalar(10);
+    currentLookAt.add(camera.position);
 
-    const finalLookAt = isZoomedIn ? target : new Vector3(0, 1, 0); // Target when zoomed vs. general center
+    const finalLookAt = isZoomedIn ? target : new Vector3(0, 1, 0);
+    lookAtTarget.lerpVectors(currentLookAt, finalLookAt, easedProgress);
+    camera.lookAt(lookAtTarget);
 
-    lookAtTarget.lerpVectors(currentLookAt, finalLookAt, 0.05); // Interpolate
-    camera.lookAt(lookAtTarget); // Look at the interpolated target
-
-    // Direct lookAt (less smooth) - kept for reference
-    // if (isZoomedIn) {
-    //   camera.lookAt(target); // Only lookAt specific target when zoomed
-    // } else {
-    //   camera.lookAt(0, 1, 0); // Look towards center of scene origin when zoomed out
-    // }
+    // Reset animation state when complete
+    if (progress >= 1) {
+      isAnimating.current = false;
+    }
   });
 
   return null;
@@ -89,67 +105,58 @@ const Room = ({ onReady }: RoomProps) => { // Accept onReady prop
 
   // --- Refactored RoomModel ---
   const RoomModelRefactored = ({ isZoomedIn, setIsZoomedIn, children }: RoomModelProps) => {
-      const { scene } = useGLTF('/living-room.glb'); // Ensure this path is correct
+      const { scene } = useGLTF('/living-room.glb');
       const { camera, gl } = useThree();
       const raycaster = useRef(new Raycaster());
       const mousePosition = useRef(new Vector2());
       const groupRef = useRef<Group>(null);
-      const targetRotation = useRef(new Vector2()); // For parallax target
+      const targetRotation = useRef(new Vector2());
 
       // Parallax effect based on mouse movement
       useEffect(() => {
           const handleMouseMove = (event: MouseEvent) => {
-              // Disable parallax if zoomed in
+              // Check if the event originated from the volume control
+              const volumeControl = document.querySelector('.volume-control');
+              if (volumeControl && volumeControl.contains(event.target as Node)) {
+                  return;
+              }
+
               if (isZoomedIn) {
-                  // Instantly reset target rotation when zoomed to avoid lerping from old value
                   targetRotation.current.set(0,0);
                   return;
               };
-              // Calculate normalized mouse coordinates
               const x = (event.clientX / window.innerWidth - 0.5) * 2;
               const y = (event.clientY / window.innerHeight - 0.5) * 2;
-              // Set target rotation for parallax (adjust multiplier for sensitivity)
-              targetRotation.current.set(y * 0.1, x * 0.1); // Reduced sensitivity
+              targetRotation.current.set(y * 0.03, x * 0.03);
           };
           window.addEventListener('mousemove', handleMouseMove);
           return () => window.removeEventListener('mousemove', handleMouseMove);
-      }, [isZoomedIn]); // Re-run effect if zoom state changes
-
-      // Apply smooth rotation (parallax or reset) in render loop
-      useFrame(() => {
-          if (groupRef.current) {
-              // Determine target rotation: parallax target if not zoomed, 0 if zoomed
-              const targetX = isZoomedIn ? 0 : targetRotation.current.x;
-              const targetY = isZoomedIn ? 0 : targetRotation.current.y;
-              // Smoothly interpolate current rotation towards target rotation
-              groupRef.current.rotation.x += (targetX - groupRef.current.rotation.x) * 0.05;
-              groupRef.current.rotation.y += (targetY - groupRef.current.rotation.y) * 0.05;
-          }
-      });
+      }, [isZoomedIn]);
 
       // Handle click to zoom in
       useEffect(() => {
           const handleClick = (event: MouseEvent) => {
-              // Don't allow zooming in again if already zoomed
-             if (isZoomedIn) return;
+              // Check if the event originated from the volume control
+              const volumeControl = document.querySelector('.volume-control');
+              if (volumeControl && volumeControl.contains(event.target as Node)) {
+                  return;
+              }
+
+              if (isZoomedIn) return;
 
               const { clientX, clientY } = event;
               const { clientWidth, clientHeight } = gl.domElement;
-              // Calculate normalized device coordinates for raycasting
               const x = (clientX / clientWidth) * 2 - 1;
               const y = -(clientY / clientHeight) * 2 + 1;
               mousePosition.current.set(x, y);
-              // Update the raycaster with the camera and mouse position
               raycaster.current.setFromCamera(mousePosition.current, camera);
-              // Check for intersections with the model
               const intersects = raycaster.current.intersectObject(scene, true);
 
               if (intersects.length > 0) {
                   const clickedObjectName = intersects[0].object.name;
-                  // Define clickable object names (adjust as needed based on your GLB model)
-                  const clickableNames = ['CoffeTable', 'Table', 'Scrapbook', 'Book']; // Add more names if needed
+                  const clickableNames = ['CoffeTable', 'Table', 'Scrapbook', 'Book'];
                   if (clickableNames.some(name => clickedObjectName.includes(name))) {
-                       setIsZoomedIn(true); // Trigger zoom in parent state
+                      setIsZoomedIn(true);
                   }
               }
           };
@@ -158,7 +165,7 @@ const Room = ({ onReady }: RoomProps) => { // Accept onReady prop
           return () => {
               currentElement.removeEventListener('click', handleClick);
           };
-      }, [gl, camera, scene, setIsZoomedIn, isZoomedIn]); // Add isZoomedIn dependency
+      }, [gl, camera, scene, setIsZoomedIn, isZoomedIn]);
 
       // Apply scene properties recursively
       useEffect(() => {

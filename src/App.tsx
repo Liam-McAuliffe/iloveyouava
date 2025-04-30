@@ -169,45 +169,53 @@ const App = () => {
          )}
       </AnimatePresence>
 
-      {/* Volume Controls (unchanged) */}
+      {/* Volume Controls */}
       <div
-  className="fixed top-4 right-4 z-50"
-  ref={volumeControlRef}
->
-  <div className="flex items-center gap-2 p-2 bg-gray-800/60 rounded-full shadow-lg">
-    {/* Icon container with fixed width */}
-    <div className="w-8 flex justify-center">
-      <button
-        onClick={toggleMute}
-        className="text-white text-lg focus:outline-none"
-        aria-label={isMuted ? "Unmute" : "Mute"}
+        className="fixed top-4 right-4 z-50 volume-control"
+        ref={volumeControlRef}
+        onClick={(e) => e.stopPropagation()}
       >
-        {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
-      </button>
-    </div>
+        <div className="flex items-center gap-2 p-2 bg-gray-800/60 rounded-full shadow-lg">
+          {/* Icon container with fixed width */}
+          <div className="w-8 flex justify-center">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleMute();
+              }}
+              className="text-white text-lg focus:outline-none"
+              aria-label={isMuted ? "Unmute" : "Mute"}
+            >
+              {isMuted || volume === 0 ? '🔇' : volume < 0.5 ? '🔉' : '🔊'}
+            </button>
+          </div>
 
-    {/* Slider */}
-    <input
-      type="range"
-      min="0" max="1" step="0.01"
-      value={isMuted ? 0 : volume}
-      onChange={handleVolumeChange}
-      className="h-2 flex-1 appearance-none rounded-lg outline-none cursor-pointer"
-      style={{
-        background: `linear-gradient(
-          to right,
-          #fbbf24 ${(isMuted ? 0 : volume) * 100}%,
-          rgba(251,191,36,0.2) ${(isMuted ? 0 : volume) * 100}%
-        )`,
-      }}
-    />
+          {/* Slider */}
+          <input
+            type="range"
+            min="0" max="1" step="0.01"
+            value={isMuted ? 0 : volume}
+            onChange={(e) => {
+              e.stopPropagation();
+              handleVolumeChange(e);
+            }}
+            onClick={(e) => e.stopPropagation()}
+            className="h-2 flex-1 appearance-none rounded-lg outline-none cursor-pointer"
+            style={{
+              background: `linear-gradient(
+                to right,
+                #fbbf24 ${(isMuted ? 0 : volume) * 100}%,
+                rgba(251,191,36,0.2) ${(isMuted ? 0 : volume) * 100}%
+              )`,
+            }}
+          />
 
-    {/* Percentage label */}
-    <span className="w-8 text-right text-sm font-bold text-white">
-      {Math.round((isMuted ? 0 : volume) * 100)}%
-    </span>
-  </div>
-</div>
+          {/* Percentage label */}
+          <span className="w-8 text-right text-sm font-bold text-white">
+            {Math.round((isMuted ? 0 : volume) * 100)}%
+          </span>
+        </div>
+      </div>
 
     </div>
   );

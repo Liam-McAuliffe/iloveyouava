@@ -153,10 +153,6 @@ const StartScreen = ({ onBegin }: { onBegin: () => void }) => {
     }
   };
 
-  // REMOVED: Sparkle component
-
-  // REMOVED: generateSparkles function
-
   // Render an animated letter with effects
   const renderAnimatedLetter = (letter: { text: string, color: string, shadow: string, delay: number, duration: number, amplitude: number, rotateRange: number[] }, index: number) => {
     const isHovered = hoveredLetter === `${letter.text}-${index}`;
@@ -213,7 +209,6 @@ const StartScreen = ({ onBegin }: { onBegin: () => void }) => {
         animate={isHovered ? "hover" : "animate"}
         onHoverStart={() => setHoveredLetter(`${letter.text}-${index}`)}
         onHoverEnd={() => setHoveredLetter(null)}
-        // REMOVED: onTapStart and onTap props
       >
         {/* Optional: Glowing effect on hover (can be removed if not desired) */}
         {isHovered && (
@@ -222,18 +217,19 @@ const StartScreen = ({ onBegin }: { onBegin: () => void }) => {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 0.6, scale: 1.2 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            style={{ backgroundColor: letter.color.includes('rose') ? '#fda4af' :
-                                    letter.color.includes('teal') ? '#5eead4' :
-                                    letter.color.includes('amber') ? '#fbbf24' :
-                                    letter.color.includes('emerald') ? '#6ee7b7' :
-                                    letter.color.includes('pink') ? '#f9a8d4' :
-                                    letter.color.includes('yellow') ? '#fde047' :
-                                    letter.color.includes('violet') ? '#c4b5fd' :
-                                    letter.color.includes('red') ? '#f87171' : '#6ee7b7' }}
+            style={{
+              backgroundColor: letter.color.includes('rose') ? '#fda4af' :
+                letter.color.includes('teal') ? '#5eead4' :
+                  letter.color.includes('amber') ? '#fbbf24' :
+                    letter.color.includes('emerald') ? '#6ee7b7' :
+                      letter.color.includes('pink') ? '#f9a8d4' :
+                        letter.color.includes('yellow') ? '#fde047' :
+                          letter.color.includes('violet') ? '#c4b5fd' :
+                            letter.color.includes('red') ? '#f87171' : '#6ee7b7'
+            }}
           />
         )}
 
-        {/* REMOVED: id attribute and generateSparkles call */}
         <div className="relative">
           {/* The actual letter */}
           {letter.text}
@@ -248,7 +244,6 @@ const StartScreen = ({ onBegin }: { onBegin: () => void }) => {
       onMouseMove={handleMouseMove}
       onMouseUp={finishDragging}
     >
-      {/* REMOVED: CSS for letter tap animation */}
 
       {/* Sticker Inventory Sidebar */}
       <motion.div
@@ -397,35 +392,26 @@ const StartScreen = ({ onBegin }: { onBegin: () => void }) => {
           whileTap={{ scale: 0.98 }}
           onClick={onBegin}
         >
-          {/* REMOVED: Button sparkle effect span */}
-
           <span className="relative z-10">BEGIN</span>
         </motion.button>
-
-        {/* REMOVED: Floating hearts decorations */}
       </div>
 
       {/* Render user-added stickers from inventory */}
       {addedStickers.map((sticker) => (
         <motion.div
           key={sticker.id}
-          className="fixed w-16 h-16 z-20" // Ensure added stickers appear above initial ones if needed
+          className="fixed w-16 h-16 z-20 pointer-events-none" //  Stickers are NOT draggable after placement.
           style={{
             left: 0,
             top: 0,
             transform: `translate(${sticker.x}px, ${sticker.y}px) translate(-50%, -50%) rotate(${sticker.rotation}deg) scale(${sticker.scale})`,
             willChange: 'transform', // Optimization for animation
           }}
-          // Added simple drag functionality to placed stickers
-          drag
-          dragConstraints={{ left: 0, right: window.innerWidth, top: 0, bottom: window.innerHeight }} // Basic window constraints
-          dragMomentum={false} // Optional: disable momentum after drag
-          // REMOVED: handleExistingStickerDragEnd as coordinates are updated automatically by drag prop + style
         >
           <img
             src={sticker.src}
             alt="Sticker"
-            className="w-full h-full object-contain pointer-events-none" // prevent image interference with drag
+            className="w-full h-full object-contain" // prevent image interference
           />
         </motion.div>
       ))}
