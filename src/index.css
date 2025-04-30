@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-handwriting: "Dancing Script", cursive;
+  --color-romantic-pink: #FFB6C1;
+  --color-romantic-light: #fffbeb;
+  --color-romantic-dark: #FF69B4;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-romantic-light);
+    color: var(--color-gray-800);
+  }
+}
+
+@layer components {
+  .page {
+    background-color: white;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-8);
+    max-width: var(--max-w-2xl);
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
+  .handwriting {
+    font-family: var(--font-handwriting);
+    font-size: var(--text-2xl);
+    color: var(--color-romantic-dark);
+  }
+}
