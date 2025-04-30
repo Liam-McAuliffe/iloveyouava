@@ -8,7 +8,6 @@ import {
   Vector2,
   Raycaster,
   LoopOnce,
-  AnimationMixer,
   type AnimationAction // Use 'type' for type-only imports
 } from 'three';
 
